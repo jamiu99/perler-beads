@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拼豆图纸生成器 - 独立版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 0;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            padding: 20px;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .canvas-area {
+            padding: 30px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f8f9ff;
+        }
+
+        .upload-zone:hover {
+            background: #e8ebff;
+            border-color: #764ba2;
+        }
+
+        .upload-zone.dragover {
+            background: #d8dcff;
+            border-color: #667eea;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-group select,
+        .control-group button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+        }
+
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .stats-section {
+            margin-top: 30px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .stats-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .color-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .color-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .color-item.excluded {
+            opacity: 0.4;
+            text-decoration: line-through;
+        }
+
+        .color-swatch {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .color-info {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .color-key {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .color-count {
+            color: #666;
+        }
+
+        .value-display {
+            display: inline-block;
+            margin-left: 10px;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+            display: none;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .info-badge {
+            display: inline-block;
+            background: #e8ebff;
+            color: #667eea;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-button {
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .mode-button.active {
+            border-color: #667eea;
+            background: #e8ebff;
+            color: #667eea;
+        }
+
+        .mode-button:hover {
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #e0e0e0;
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>拼豆图纸生成器</h1>
+            <p>智能转换图片为拼豆图纸，支持多色板系统和颜色优化</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="section-title">图片上传</div>
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📁</div>
+                    <p>点击或拖放图片</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                </div>
+
+                <div class="section-title" style="margin-top: 20px;">像素化设置</div>
+
+                <div class="mode-selector">
+                    <div class="mode-button active" data-mode="dominant">卡通模式</div>
+                    <div class="mode-button" data-mode="average">真实模式</div>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        横向格子数量 <span class="value-display" id="granularityValue">50</span>
+                    </label>
+                    <input type="range" id="granularity" min="10" max="200" value="50" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        颜色合并阈值 <span class="value-display" id="thresholdValue">30</span>
+                    </label>
+                    <input type="range" id="threshold" min="0" max="100" value="30" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label>色号系统</label>
+                    <select id="colorSystem">
+                        <option value="MARD">MARD</option>
+                        <option value="COCO">COCO</option>
+                        <option value="漫漫">漫漫</option>
+                        <option value="盼盼">盼盼</option>
+                        <option value="咪小窝">咪小窝</option>
+                    </select>
+                </div>
+
+                <button id="processBtn" disabled>处理图片</button>
+
+                <div class="section-title" style="margin-top: 20px;">下载选项</div>
+
+                <div class="button-group">
+                    <button id="downloadGridBtn" disabled>下载图纸</button>
+                    <button id="downloadStatsBtn" disabled>下载统计</button>
+                </div>
+            </div>
+
+            <div class="canvas-area">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>处理中...</p>
+                </div>
+
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+
+                <div class="stats-section" id="statsSection" style="display: none;">
+                    <h3>
+                        颜色统计
+                        <span class="info-badge" id="totalCount">总计: 0 颗</span>
+                    </h3>
+                    <div class="color-list" id="colorList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // ==================== 核心数据结构 ====================
+
+        // 简化的色板数据（包含常用的MARD色号）
+        const COLOR_PALETTE = {
+            "#FAF4C8": { "MARD": "A01", "COCO": "E02", "漫漫": "E2", "盼盼": "65", "咪小窝": "77" },
+            "#FFFFD5": { "MARD": "A02", "COCO": "E01", "漫漫": "B1", "盼盼": "2", "咪小窝": "2" },
+            "#FEFF8B": { "MARD": "A03", "COCO": "E05", "漫漫": "B2", "盼盼": "28", "咪小窝": "28" },
+            "#FBED56": { "MARD": "A04", "COCO": "E07", "漫漫": "B3", "盼盼": "3", "咪小窝": "3" },
+            "#F4D738": { "MARD": "A05", "COCO": "D03", "漫漫": "B4", "盼盼": "74", "咪小窝": "79" },
+            "#FEAC4C": { "MARD": "A06", "COCO": "D05", "漫漫": "B5", "盼盼": "29", "咪小窝": "29" },
+            "#FE8B4C": { "MARD": "A07", "COCO": "D08", "漫漫": "B6", "盼盼": "4", "咪小窝": "4" },
+            "#FF995B": { "MARD": "A09", "COCO": "D06", "漫漫": "B11", "盼盼": "90", "咪小窝": "97" },
+            "#FD543D": { "MARD": "A14", "COCO": "C05", "漫漫": "B14", "盼盼": "138", "咪小窝": "135" },
+            "#FD7C72": { "MARD": "A19", "COCO": "K10", "漫漫": "IC15", "盼盼": "218", "咪小窝": "218" },
+            "#E6EE31": { "MARD": "B01", "COCO": "F05", "漫漫": "C1", "盼盼": "48", "咪小窝": "48" },
+            "#63F347": { "MARD": "B02", "COCO": "F08", "漫漫": "C2", "盼盼": "33", "咪小窝": "33" },
+            "#9EF780": { "MARD": "B03", "COCO": "F04", "漫漫": "C7", "盼盼": "26", "咪小窝": "26" },
+            "#5DE035": { "MARD": "B04", "COCO": "F09", "漫漫": "C3", "盼盼": "66", "咪小窝": "78" },
+            "#35E352": { "MARD": "B05", "COCO": "F10", "漫漫": "C4", "盼盼": "39", "咪小窝": "39" },
+            "#1C9C4F": { "MARD": "B08", "COCO": "F11", "漫漫": "C5", "盼盼": "10", "咪小窝": "10" },
+            "#27523A": { "MARD": "B09", "COCO": "F16", "漫漫": "C6", "盼盼": "79", "咪小窝": "84" },
+            "#46CDFF": { "MARD": "C01", "COCO": "I01", "漫漫": "D1", "盼盼": "52", "咪小窝": "52" },
+            "#91E9FF": { "MARD": "C02", "COCO": "I02", "漫漫": "D2", "盼盼": "58", "咪小窝": "58" },
+            "#63D1F4": { "MARD": "C03", "COCO": "I03", "漫漫": "D3", "盼盼": "57", "咪小窝": "57" },
+            "#4DD2FB": { "MARD": "C04", "COCO": "I04", "漫漫": "D4", "盼盼": "19", "咪小窝": "19" },
+            "#3598DB": { "MARD": "C05", "COCO": "I05", "漫漫": "D5", "盼盼": "51", "咪小窝": "51" },
+            "#1F5AA6": { "MARD": "C06", "COCO": "I06", "漫漫": "D6", "盼盼": "63", "咪小窝": "68" },
+            "#0F4780": { "MARD": "C07", "COCO": "I07", "漫漫": "D7", "盼盼": "43", "咪小窝": "43" },
+            "#FF78B9": { "MARD": "D01", "COCO": "J01", "漫漫": "A1", "盼盼": "14", "咪小窝": "14" },
+            "#FF6AB3": { "MARD": "D02", "COCO": "J02", "漫漫": "A2", "盼盼": "92", "咪小窝": "93" },
+            "#FF4DA4": { "MARD": "D03", "COCO": "J03", "漫漫": "A3", "盼盼": "13", "咪小窝": "13" },
+            "#E74591": { "MARD": "D04", "COCO": "J04", "漫漫": "A4", "盼盼": "73", "咪小窝": "73" },
+            "#C94682": { "MARD": "D05", "COCO": "J05", "漫漫": "A5", "盼盼": "62", "咪小窝": "67" },
+            "#A0276E": { "MARD": "D06", "COCO": "J06", "漫漫": "A6", "盼盼": "72", "咪小窝": "72" },
+            "#FFFFFF": { "MARD": "H1", "COCO": "H01", "漫漫": "H1", "盼盼": "1", "咪小窝": "1" },
+            "#F4F4F4": { "MARD": "H2", "COCO": "H02", "漫漫": "H2", "盼盼": "70", "咪小窝": "70" },
+            "#E6E6E6": { "MARD": "H3", "COCO": "H03", "漫漫": "H3", "盼盼": "17", "咪小窝": "17" },
+            "#CCCCCC": { "MARD": "H4", "COCO": "H04", "漫漫": "H4", "盼盼": "80", "咪小窝": "85" },
+            "#B3B3B3": { "MARD": "H5", "COCO": "H05", "漫漫": "H5", "盼盼": "71", "咪小窝": "71" },
+            "#999999": { "MARD": "H6", "COCO": "H06", "漫漫": "H6", "盼盼": "18", "咪小窝": "18" },
+            "#808080": { "MARD": "H7", "COCO": "H07", "漫漫": "H7", "盼盼": "46", "咪小窝": "46" },
+            "#666666": { "MARD": "H8", "COCO": "H08", "漫漫": "H8", "盼盼": "95", "咪小窝": "95" },
+            "#4D4D4D": { "MARD": "H9", "COCO": "H09", "漫漫": "H9", "盼盼": "38", "咪小窝": "38" },
+            "#333333": { "MARD": "H10", "COCO": "H10", "漫漫": "H10", "盼盼": "42", "咪小窝": "42" },
+            "#1A1A1A": { "MARD": "H11", "COCO": "H11", "漫漫": "H11", "盼盼": "94", "咪小窝": "94" },
+            "#000000": { "MARD": "H12", "COCO": "H12", "漫漫": "H12", "盼盼": "20", "咪小窝": "20" },
+            "#8B4513": { "MARD": "E01", "COCO": "K01", "漫漫": "F1", "盼盼": "61", "咪小窝": "66" },
+            "#A0522D": { "MARD": "E02", "COCO": "K02", "漫漫": "F2", "盼盼": "83", "咪小窝": "88" },
+            "#D2691E": { "MARD": "E03", "COCO": "K03", "漫漫": "F3", "盼盼": "69", "咪小窝": "69" },
+            "#8B7355": { "MARD": "E04", "COCO": "K04", "漫漫": "F4", "盼盼": "25", "咪小窝": "25" },
+        };
+
+        // 背景色号列表
+        const BACKGROUND_KEYS = ['H1', 'T1'];
+
+        // 全局状态
+        let state = {
+            originalImage: null,
+            mappedPixelData: null,
+            gridDimensions: null,
+            colorCounts: null,
+            totalBeadCount: 0,
+            selectedColorSystem: 'MARD',
+            pixelationMode: 'dominant',
+            excludedColors: new Set()
+        };
+
+        // ==================== 辅助函数 ====================
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function colorDistance(rgb1, rgb2) {
+            const dr = rgb1.r - rgb2.r;
+            const dg = rgb1.g - rgb2.g;
+            const db = rgb1.b - rgb2.b;
+            return Math.sqrt(dr * dr + dg * dg + db * db);
+        }
+
+        function findClosestPaletteColor(targetRgb, palette) {
+            let minDistance = Infinity;
+            let closestColor = palette[0];
+
+            for (const paletteColor of palette) {
+                const distance = colorDistance(targetRgb, paletteColor.rgb);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestColor = paletteColor;
+                }
+                if (distance === 0) break;
+            }
+            return closestColor;
+        }
+
+        function getDisplayColorKey(hexValue, colorSystem) {
+            const normalizedHex = hexValue.toUpperCase();
+            const mapping = COLOR_PALETTE[normalizedHex];
+
+            if (mapping && mapping[colorSystem]) {
+                return mapping[colorSystem];
+            }
+
+            return '?';
+        }
+
+        function getPalette() {
+            return Object.keys(COLOR_PALETTE).map(hex => {
+                const rgb = hexToRgb(hex);
+                return {
+                    key: hex,
+                    hex: hex,
+                    rgb: rgb
+                };
+            }).filter(c => c.rgb !== null);
+        }
+
+        function getContrastColor(hex) {
+            const rgb = hexToRgb(hex);
+            if (!rgb) return '#000000';
+            const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
+            return luma > 0.5 ? '#000000' : '#FFFFFF';
+        }
+
+        // ==================== 核心算法 ====================
+
+        function calculateCellRepresentativeColor(imageData, startX, startY, width, height, mode) {
+            const data = imageData.data;
+            const imgWidth = imageData.width;
+            let rSum = 0, gSum = 0, bSum = 0;
+            let pixelCount = 0;
+            const colorCounts = {};
+            let dominantColorRgb = null;
+            let maxCount = 0;
+
+            const endX = startX + width;
+            const endY = startY + height;
+
+            for (let y = startY; y < endY; y++) {
+                for (let x = startX; x < endX; x++) {
+                    const index = (y * imgWidth + x) * 4;
+                    if (data[index + 3] < 128) continue;
+
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+
+                    pixelCount++;
+
+                    if (mode === 'average') {
+                        rSum += r;
+                        gSum += g;
+                        bSum += b;
+                    } else {
+                        const colorKey = `${r},${g},${b}`;
+                        colorCounts[colorKey] = (colorCounts[colorKey] || 0) + 1;
+                        if (colorCounts[colorKey] > maxCount) {
+                            maxCount = colorCounts[colorKey];
+                            dominantColorRgb = { r, g, b };
+                        }
+                    }
+                }
+            }
+
+            if (pixelCount === 0) return null;
+
+            if (mode === 'average') {
+                return {
+                    r: Math.round(rSum / pixelCount),
+                    g: Math.round(gSum / pixelCount),
+                    b: Math.round(bSum / pixelCount)
+                };
+            } else {
+                return dominantColorRgb;
+            }
+        }
+
+        function calculatePixelGrid(imageData, imgWidth, imgHeight, N, M, palette, mode) {
+            const mappedData = [];
+            const cellWidth = imgWidth / N;
+            const cellHeight = imgHeight / M;
+
+            for (let j = 0; j < M; j++) {
+                const row = [];
+                for (let i = 0; i < N; i++) {
+                    const startX = Math.floor(i * cellWidth);
+                    const startY = Math.floor(j * cellHeight);
+                    const endX = Math.min(imgWidth, Math.ceil((i + 1) * cellWidth));
+                    const endY = Math.min(imgHeight, Math.ceil((j + 1) * cellHeight));
+                    const width = Math.max(1, endX - startX);
+                    const height = Math.max(1, endY - startY);
+
+                    const rgb = calculateCellRepresentativeColor(
+                        imageData, startX, startY, width, height, mode
+                    );
+
+                    if (rgb) {
+                        const closest = findClosestPaletteColor(rgb, palette);
+                        row.push({ key: closest.hex, color: closest.hex, isExternal: false });
+                    } else {
+                        row.push({ key: 'TRANSPARENT', color: '#FFFFFF', isExternal: true });
+                    }
+                }
+                mappedData.push(row);
+            }
+
+            return mappedData;
+        }
+
+        function mergeColorRegions(mappedData, threshold) {
+            const M = mappedData.length;
+            const N = mappedData[0].length;
+            const visited = new Set();
+            const result = JSON.parse(JSON.stringify(mappedData));
+
+            for (let j = 0; j < M; j++) {
+                for (let i = 0; i < N; i++) {
+                    const key = `${j},${i}`;
+                    if (visited.has(key)) continue;
+
+                    const region = findSimilarRegion(mappedData, j, i, threshold, visited);
+                    if (region.length === 0) continue;
+
+                    const keyCounts = {};
+                    region.forEach(({ row, col }) => {
+                        const cellKey = mappedData[row][col].key;
+                        keyCounts[cellKey] = (keyCounts[cellKey] || 0) + 1;
+                    });
+
+                    const dominantKey = Object.keys(keyCounts).reduce((a, b) =>
+                        keyCounts[a] > keyCounts[b] ? a : b
+                    );
+
+                    region.forEach(({ row, col }) => {
+                        result[row][col] = { key: dominantKey, color: dominantKey, isExternal: false };
+                    });
+                }
+            }
+
+            return result;
+        }
+
+        function findSimilarRegion(data, startRow, startCol, threshold, visited) {
+            const M = data.length;
+            const N = data[0].length;
+            const region = [];
+            const queue = [{ row: startRow, col: startCol }];
+            const startColor = hexToRgb(data[startRow][startCol].color);
+
+            while (queue.length > 0) {
+                const { row, col } = queue.shift();
+                const key = `${row},${col}`;
+
+                if (row < 0 || row >= M || col < 0 || col >= N || visited.has(key)) continue;
+
+                const cell = data[row][col];
+                if (cell.isExternal) continue;
+
+                const currentColor = hexToRgb(cell.color);
+                if (!currentColor || !startColor) continue;
+
+                if (colorDistance(startColor, currentColor) <= threshold) {
+                    visited.add(key);
+                    region.push({ row, col });
+
+                    queue.push(
+                        { row: row - 1, col },
+                        { row: row + 1, col },
+                        { row, col: col - 1 },
+                        { row, col: col + 1 }
+                    );
+                }
+            }
+
+            return region;
+        }
+
+        function markExternalCells(data) {
+            const M = data.length;
+            const N = data[0].length;
+            const queue = [];
+            const visited = new Set();
+
+            for (let i = 0; i < N; i++) {
+                queue.push([0, i]);
+                queue.push([M - 1, i]);
+            }
+            for (let j = 1; j < M - 1; j++) {
+                queue.push([j, 0]);
+                queue.push([j, N - 1]);
+            }
+
+            while (queue.length > 0) {
+                const [row, col] = queue.shift();
+                const key = `${row},${col}`;
+
+                if (row < 0 || row >= M || col < 0 || col >= N || visited.has(key)) continue;
+
+                const cell = data[row][col];
+                const displayKey = getDisplayColorKey(cell.key, state.selectedColorSystem);
+
+                if (BACKGROUND_KEYS.includes(displayKey)) {
+                    cell.isExternal = true;
+                    visited.add(key);
+
+                    queue.push(
+                        [row - 1, col],
+                        [row + 1, col],
+                        [row, col - 1],
+                        [row, col + 1]
+                    );
+                }
+            }
+        }
+
+        function calculateColorCounts(mappedData) {
+            const counts = {};
+            let total = 0;
+
+            for (let j = 0; j < mappedData.length; j++) {
+                for (let i = 0; i < mappedData[0].length; i++) {
+                    const cell = mappedData[j][i];
+                    if (cell.isExternal) continue;
+
+                    const key = cell.key;
+                    if (!counts[key]) {
+                        counts[key] = { count: 0, color: cell.color };
+                    }
+                    counts[key].count++;
+                    total++;
+                }
+            }
+
+            return { counts, total };
+        }
+
+        // ==================== 处理流程 ====================
+
+        async function processImage() {
+            if (!state.originalImage) return;
+
+            showLoading(true);
+
+            setTimeout(() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = state.originalImage.width;
+                    canvas.height = state.originalImage.height;
+                    ctx.drawImage(state.originalImage, 0, 0);
+
+                    const granularity = parseInt(document.getElementById('granularity').value);
+                    const threshold = parseInt(document.getElementById('threshold').value);
+                    const N = granularity;
+                    const M = Math.round((state.originalImage.height / state.originalImage.width) * N);
+
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const palette = getPalette();
+
+                    let mappedData = calculatePixelGrid(
+                        imageData,
+                        canvas.width,
+                        canvas.height,
+                        N, M,
+                        palette,
+                        state.pixelationMode
+                    );
+
+                    mappedData = mergeColorRegions(mappedData, threshold);
+                    markExternalCells(mappedData);
+
+                    state.mappedPixelData = mappedData;
+                    state.gridDimensions = { N, M };
+
+                    const { counts, total } = calculateColorCounts(mappedData);
+                    state.colorCounts = counts;
+                    state.totalBeadCount = total;
+
+                    renderPreview();
+                    updateStats();
+
+                    document.getElementById('downloadGridBtn').disabled = false;
+                    document.getElementById('downloadStatsBtn').disabled = false;
+
+                } catch (error) {
+                    console.error('处理失败:', error);
+                    alert('图片处理失败，请重试');
+                } finally {
+                    showLoading(false);
+                }
+            }, 100);
+        }
+
+        function renderPreview() {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d');
+            const { N, M } = state.gridDimensions;
+            const cellSize = Math.min(600 / N, 600 / M);
+
+            canvas.width = N * cellSize;
+            canvas.height = M * cellSize;
+
+            for (let j = 0; j < M; j++) {
+                for (let i = 0; i < N; i++) {
+                    const cell = state.mappedPixelData[j][i];
+                    const x = i * cellSize;
+                    const y = j * cellSize;
+
+                    ctx.fillStyle = cell.isExternal ? '#F0F0F0' : cell.color;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+
+                    ctx.strokeStyle = '#DDDDDD';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                }
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = `总计: ${state.totalBeadCount} 颗`;
+
+            const colorList = document.getElementById('colorList');
+            colorList.innerHTML = '';
+
+            const sortedKeys = Object.keys(state.colorCounts).sort();
+
+            sortedKeys.forEach(key => {
+                const data = state.colorCounts[key];
+                const displayKey = getDisplayColorKey(key, state.selectedColorSystem);
+
+                const item = document.createElement('div');
+                item.className = 'color-item';
+                item.innerHTML = `
+                    <div class="color-swatch" style="background: ${data.color}"></div>
+                    <div class="color-info">
+                        <div class="color-key">${displayKey}</div>
+                        <div class="color-count">${data.count} 颗</div>
+                    </div>
+                `;
+                colorList.appendChild(item);
+            });
+
+            document.getElementById('statsSection').style.display = 'block';
+        }
+
+        function downloadGrid() {
+            const { N, M } = state.gridDimensions;
+            const cellSize = 30;
+            const canvas = document.createElement('canvas');
+            canvas.width = N * cellSize;
+            canvas.height = M * cellSize;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const fontSize = Math.max(8, Math.floor(cellSize * 0.4));
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let j = 0; j < M; j++) {
+                for (let i = 0; i < N; i++) {
+                    const cell = state.mappedPixelData[j][i];
+                    if (cell.isExternal) continue;
+
+                    const x = i * cellSize;
+                    const y = j * cellSize;
+
+                    ctx.fillStyle = cell.color;
+                    ctx.fillRect(x, y, cellSize, cellSize);
+
+                    const displayKey = getDisplayColorKey(cell.key, state.selectedColorSystem);
+                    ctx.fillStyle = getContrastColor(cell.color);
+                    ctx.fillText(displayKey, x + cellSize / 2, y + cellSize / 2);
+
+                    ctx.strokeStyle = '#DDDDDD';
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(x, y, cellSize, cellSize);
+                }
+            }
+
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            const link = document.createElement('a');
+            link.download = `bead-grid-${N}x${M}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function downloadStats() {
+            const canvas = document.createElement('canvas');
+            const width = 800;
+            const padding = 40;
+            const lineHeight = 30;
+            const sortedKeys = Object.keys(state.colorCounts).sort();
+            const height = padding * 2 + 60 + sortedKeys.length * lineHeight + 80;
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#333333';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('拼豆颜色统计', padding, padding + 30);
+
+            ctx.strokeStyle = '#DDDDDD';
+            ctx.beginPath();
+            ctx.moveTo(padding, padding + 50);
+            ctx.lineTo(width - padding, padding + 50);
+            ctx.stroke();
+
+            ctx.font = '16px sans-serif';
+            let y = padding + 80;
+
+            sortedKeys.forEach(key => {
+                const data = state.colorCounts[key];
+                const displayKey = getDisplayColorKey(key, state.selectedColorSystem);
+
+                ctx.fillStyle = data.color;
+                ctx.fillRect(padding, y - 10, 20, 20);
+                ctx.strokeStyle = '#CCCCCC';
+                ctx.strokeRect(padding, y - 10, 20, 20);
+
+                ctx.fillStyle = '#333333';
+                ctx.textAlign = 'left';
+                ctx.fillText(displayKey, padding + 30, y + 5);
+
+                ctx.textAlign = 'right';
+                ctx.fillText(`${data.count} 颗`, width - padding, y + 5);
+
+                y += lineHeight;
+            });
+
+            ctx.strokeStyle = '#DDDDDD';
+            ctx.beginPath();
+            ctx.moveTo(padding, y + 10);
+            ctx.lineTo(width - padding, y + 10);
+            ctx.stroke();
+
+            ctx.font = 'bold 18px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(`总计: ${state.totalBeadCount} 颗`, width - padding, y + 40);
+
+            const link = document.createElement('a');
+            link.download = `bead-stats.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').className = show ? 'loading active' : 'loading';
+        }
+
+        // ==================== UI 事件处理 ====================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadZone.addEventListener('click', () => fileInput.click());
+
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) handleFileUpload(files[0]);
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) handleFileUpload(e.target.files[0]);
+            });
+
+            document.getElementById('processBtn').addEventListener('click', processImage);
+            document.getElementById('downloadGridBtn').addEventListener('click', downloadGrid);
+            document.getElementById('downloadStatsBtn').addEventListener('click', downloadStats);
+
+            document.getElementById('granularity').addEventListener('input', (e) => {
+                document.getElementById('granularityValue').textContent = e.target.value;
+            });
+
+            document.getElementById('threshold').addEventListener('input', (e) => {
+                document.getElementById('thresholdValue').textContent = e.target.value;
+            });
+
+            document.getElementById('colorSystem').addEventListener('change', (e) => {
+                state.selectedColorSystem = e.target.value;
+                if (state.colorCounts) updateStats();
+            });
+
+            document.querySelectorAll('.mode-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    state.pixelationMode = e.target.dataset.mode;
+                });
+            });
+        });
+
+        function handleFileUpload(file) {
+            if (!file.type.match('image.*')) {
+                alert('请上传图片文件');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.originalImage = img;
+                    document.getElementById('processBtn').disabled = false;
+                    alert('图片上传成功，请点击"处理图片"按钮');
+                };
+                img.onerror = () => {
+                    alert('图片加载失败');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
