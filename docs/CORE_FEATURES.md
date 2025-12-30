@@ -30,7 +30,7 @@
   - 漫漫
   - 盼盼
   - 咪小窝
-- ✅ RGB 欧氏距离颜色映射
+- ✅ **CIEDE2000 感知色差颜色映射**（使用 color-diff 库）
 - ✅ 相似颜色智能合并（可调阈值）
 - ✅ 背景自动移除
 - ✅ 颜色排除与重映射
@@ -125,25 +125,33 @@ function calculateCellRepresentativeColor(imageData, startX, startY, width, heig
   }
 }
 
-// 颜色映射到色板
-function findClosestPaletteColor(targetRgb, palette) {
-  let minDistance = Infinity
-  let closestColor = palette[0]
+// 颜色映射到色板 - 使用 color-diff 库
+import * as colorDiff from 'color-diff';
 
-  遍历色板中的每个颜色 {
-    distance = √((r1-r2)² + (g1-g2)² + (b1-b2)²)  // 欧氏距离
-    if (distance < minDistance) {
-      minDistance = distance
-      closestColor = 当前颜色
-    }
-  }
-  return closestColor
+function findClosestPaletteColor(targetRgb, palette) {
+  // 转换到 color-diff 格式 (大写 R, G, B)
+  const targetColor = { R: targetRgb.r, G: targetRgb.g, B: targetRgb.b };
+
+  // 转换色板
+  const paletteColors = palette.map(color => ({
+    R: color.rgb.r,
+    G: color.rgb.g,
+    B: color.rgb.b,
+    original: color  // 保持原始数据引用
+  }));
+
+  // 使用 CIEDE2000 算法找到最接近的颜色
+  const closestColor = colorDiff.closest(targetColor, paletteColors);
+
+  return closestColor.original;
 }
 ```
 
 **关键优化：**
 - 使用主导色而非平均色，避免毛边问题
-- 欧氏距离在 RGB 空间计算，确保颜色相似度准确
+- **使用 CIEDE2000 算法**计算颜色差异，符合人眼感知
+- color-diff 库内部使用 LAB 色彩空间，比 RGB 欧氏距离更准确
+- 避免了绿色系和红色系等不同色相的感知偏差
 
 ---
 

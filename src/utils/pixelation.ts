@@ -1,4 +1,5 @@
 import { transparentColorData } from './pixelEditingUtils';
+import * as colorDiff from 'color-diff';
 
 // 定义像素化模式
 export enum PixelationMode {
@@ -14,6 +15,13 @@ export interface RgbColor {
   r: number;
   g: number;
   b: number;
+}
+
+// color-diff 库使用的颜色格式（大写 R, G, B）
+interface ColorDiffRGB {
+  R: number;
+  G: number;
+  B: number;
 }
 
 export interface PaletteColor {
@@ -40,15 +48,27 @@ export function hexToRgb(hex: string): RgbColor | null {
   } : null;
 }
 
-// 计算颜色距离
-export function colorDistance(rgb1: RgbColor, rgb2: RgbColor): number {
-  const dr = rgb1.r - rgb2.r;
-  const dg = rgb1.g - rgb2.g;
-  const db = rgb1.b - rgb2.b;
-  return Math.sqrt(dr * dr + dg * dg + db * db);
+// 转换我们的 RGB 格式到 color-diff 的格式
+function toColorDiffFormat(rgb: RgbColor): ColorDiffRGB {
+  return { R: rgb.r, G: rgb.g, B: rgb.b };
 }
 
-// 查找最接近的颜色
+// 转换 color-diff 格式回我们的格式
+function fromColorDiffFormat(rgb: ColorDiffRGB): RgbColor {
+  return { r: rgb.R, g: rgb.G, b: rgb.B };
+}
+
+// 计算颜色距离 - 使用 color-diff 库（基于 CIEDE2000 算法）
+export function colorDistance(rgb1: RgbColor, rgb2: RgbColor): number {
+  const color1 = toColorDiffFormat(rgb1);
+  const color2 = toColorDiffFormat(rgb2);
+
+  // color-diff.diff 使用 CIEDE2000 算法计算感知色差
+  // 返回的是 Delta E 值，值越小表示颜色越接近
+  return colorDiff.diff(color1, color2);
+}
+
+// 查找最接近的颜色 - 使用 color-diff 库的优化算法
 export function findClosestPaletteColor(
   targetRgb: RgbColor,
   palette: PaletteColor[]
@@ -59,18 +79,21 @@ export function findClosestPaletteColor(
       return { key: 'ERR', hex: '#000000', rgb: { r: 0, g: 0, b: 0 } };
   }
 
-  let minDistance = Infinity;
-  let closestColor = palette[0];
+  // 转换目标颜色到 color-diff 格式
+  const targetColor = toColorDiffFormat(targetRgb);
 
-  for (const paletteColor of palette) {
-    const distance = colorDistance(targetRgb, paletteColor.rgb);
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestColor = paletteColor;
-    }
-    if (distance === 0) break; // 完全匹配，提前退出
-  }
-  return closestColor;
+  // 转换色板到 color-diff 格式，并保持原始数据的关联
+  const paletteColors = palette.map(paletteColor => ({
+    ...toColorDiffFormat(paletteColor.rgb),
+    original: paletteColor // 保存原始 PaletteColor 引用
+  }));
+
+  // 使用 color-diff 的 closest 函数找到最接近的颜色
+  // 这个函数内部使用 CIEDE2000 算法，比简单的欧氏距离更准确
+  const closestColor = colorDiff.closest(targetColor, paletteColors);
+
+  // 返回原始的 PaletteColor 对象
+  return (closestColor as any).original as PaletteColor;
 }
 
 
