@@ -356,29 +356,26 @@
         };
 
         // ==================== 色板数据 ====================
-        // 简化的色板数据（常用50种颜色）
-        const COLOR_PALETTE = {
-            "#FFFFFF": { "MARD": "H1", "COCO": "H01", "漫漫": "H1", "盼盼": "1", "咪小窝": "1" },
-            "#000000": { "MARD": "H12", "COCO": "H12", "漫漫": "H12", "盼盼": "20", "咪小窝": "20" },
-            "#FF0000": { "MARD": "D07", "COCO": "J07", "漫漫": "A7", "盼盼": "16", "咪小窝": "16" },
-            "#00FF00": { "MARD": "B05", "COCO": "F10", "漫漫": "C4", "盼盼": "39", "咪小窝": "39" },
-            "#0000FF": { "MARD": "C08", "COCO": "I08", "漫漫": "D8", "盼盼": "53", "咪小窝": "53" },
-            "#FFFF00": { "MARD": "A03", "COCO": "E05", "漫漫": "B2", "盼盼": "28", "咪小窝": "28" },
-            "#FF00FF": { "MARD": "D01", "COCO": "J01", "漫漫": "A1", "盼盼": "14", "咪小窝": "14" },
-            "#00FFFF": { "MARD": "C01", "COCO": "I01", "漫漫": "D1", "盼盼": "52", "咪小窝": "52" },
-            "#FFA500": { "MARD": "A07", "COCO": "D08", "漫漫": "B6", "盼盼": "4", "咪小窝": "4" },
-            "#FFC0CB": { "MARD": "D08", "COCO": "J08", "漫漫": "A8", "盼盼": "31", "咪小窝": "31" },
-            "#808080": { "MARD": "H7", "COCO": "H07", "漫漫": "H7", "盼盼": "46", "咪小窝": "46" },
-            "#8B4513": { "MARD": "E01", "COCO": "K01", "漫漫": "F1", "盼盼": "61", "咪小窝": "66" },
-            "#FFD700": { "MARD": "A04", "COCO": "E07", "漫漫": "B3", "盼盼": "3", "咪小窝": "3" },
-            "#4169E1": { "MARD": "C06", "COCO": "I06", "漫漫": "D6", "盼盼": "63", "咪小窝": "68" },
-            "#32CD32": { "MARD": "B04", "COCO": "F09", "漫漫": "C3", "盼盼": "66", "咪小窝": "78" },
-            "#FF69B4": { "MARD": "D03", "COCO": "J03", "漫漫": "A3", "盼盼": "13", "咪小窝": "13" },
-            "#87CEEB": { "MARD": "C02", "COCO": "I02", "漫漫": "D2", "盼盼": "58", "咪小窝": "58" },
-            "#FFE4C4": { "MARD": "A23", "COCO": "E12", "漫漫": "R08", "盼盼": "274", "咪小窝": "259" },
-            "#DDA0DD": { "MARD": "D10", "COCO": "J10", "漫漫": "A10", "盼盼": "78", "咪小窝": "83" },
-            "#98FB98": { "MARD": "B03", "COCO": "F04", "漫漫": "C7", "盼盼": "26", "咪小窝": "26" }
-        };
+        // 色板数据将从外部 JSON 文件加载
+        let COLOR_PALETTE = {};
+
+        // 加载色板数据
+        async function loadColorPalette() {
+            try {
+                const response = await fetch('color-palette.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                COLOR_PALETTE = data.colors;
+                console.log(`✅ 成功加载色板数据: ${data.totalColors} 种颜色`);
+                return true;
+            } catch (error) {
+                console.error('❌ 加载色板数据失败:', error);
+                alert('加载色板数据失败，请确保 color-palette.json 文件存在');
+                return false;
+            }
+        }
 
         // ==================== 工具函数 ====================
 
@@ -412,12 +409,19 @@
             return mapping[state.colorSystem] || '?';
         }
 
-        // ==================== 步骤1: 图片上传 ====================
+        // ==================== 应用初始化 ====================
 
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const previewContainer = document.getElementById('previewContainer');
-        const originalPreview = document.getElementById('originalPreview');
+        async function initializeApp() {
+            // 加载色板数据
+            const success = await loadColorPalette();
+            if (!success) return;
+
+            // ==================== 步骤1: 图片上传 ====================
+
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const previewContainer = document.getElementById('previewContainer');
+            const originalPreview = document.getElementById('originalPreview');
 
         uploadArea.addEventListener('click', () => fileInput.click());
 
@@ -840,6 +844,16 @@
             link.href = canvas.toDataURL('image/png');
             link.click();
         });
+
+        } // initializeApp 函数结束
+
+        // 页面加载完成后初始化应用
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            // DOM 已经加载完成
+            initializeApp();
+        }
     </script>
 </body>
 </html>
