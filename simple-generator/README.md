@@ -9,31 +9,32 @@
 
 ## 🚀 使用方法
 
-### 方式1: 直接打开
+### 推荐方式: 使用 pnpm + Vite 开发服务器
 
 ```bash
-# 在浏览器中打开
-open index.html
+# 1. 安装依赖
+pnpm install
 
-# 或者
-# Windows: 双击 index.html
-# Mac: 右键 -> 打开方式 -> 浏览器
-# Linux: firefox index.html
+# 2. 启动开发服务器
+pnpm run dev
+
+# 3. 浏览器访问 http://localhost:3000
 ```
 
-### 方式2: 本地服务器
+**优势**:
+- ✅ 本地安装 color-diff 库，无需 CDN，更稳定
+- ✅ 支持热重载，开发体验好
+- ✅ ES6 模块化，代码结构清晰
+- ✅ 无跨域问题
+
+### 构建生产版本
 
 ```bash
-# Python 3
-python -m http.server 8000
+# 构建优化后的静态文件
+pnpm run build
 
-# Python 2
-python -m SimpleHTTPServer 8000
-
-# Node.js
-npx http-server
-
-# 然后访问 http://localhost:8000
+# 预览构建结果
+pnpm run preview
 ```
 
 ## ✨ 功能清单
@@ -318,18 +319,18 @@ const cellSize = 40;
 
 ## ⚠️ 注意事项
 
-1. **浏览器兼容性**
-   - 需要支持 ES6+ 的现代浏览器
-   - 推荐: Chrome、Firefox、Safari、Edge
+1. **环境要求**
+   - Node.js 16+
+   - pnpm 包管理器
+   - 现代浏览器（支持 ES6 模块）
 
 2. **图片大小**
    - 建议上传尺寸 < 2000×2000 的图片
    - 过大的图片可能导致处理缓慢
 
 3. **依赖文件**
-   - `color-palette.json` 必须与 `index.html` 在同一目录
-   - color-diff 库需要网络连接加载 CDN 资源
-   - 如需完全离线使用，需下载 color-diff 库到本地并修改引用路径
+   - `color-palette.json` 必须在项目根目录
+   - 所有依赖通过 pnpm 本地安装，无需网络连接
 
 4. **导出文件**
    - PNG 格式，可直接打印
