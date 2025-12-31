@@ -196,17 +196,31 @@ function findClosestColor(targetRgb, palette) {
 
 ### 依赖库
 
-- **color-diff** (通过 CDN 引入)
+- **color-diff** (通过 npm 安装)
   - 版本: 1.4.0
   - 用途: CIEDE2000 颜色差异计算
-  - CDN: `https://cdn.jsdelivr.net/npm/color-diff@1.4.0/lib/diff.min.js`
+  - 安装方式: `pnpm add color-diff`
+  - 使用方式: ES6 模块导入 `import * as colorDiff from 'color-diff'`
+
+- **vite** (开发依赖)
+  - 版本: 5.4.21
+  - 用途: 开发服务器和构建工具
+  - 提供热重载、模块化支持等现代化开发体验
 
 ### 数据文件
 
 - **color-palette.json**
   - 色板配置文件，包含 288 种颜色的 HEX 值和多品牌色号映射
   - 应用启动时通过 `fetch` API 异步加载
-  - 可独立编辑和扩展，无需修改 HTML 代码
+  - 可独立编辑和扩展，无需修改代码
+
+### 代码结构
+
+- **index.html** - HTML 页面结构和样式
+- **main.js** - 应用逻辑（使用 ES6 模块）
+- **color-palette.json** - 色板数据配置
+- **vite.config.js** - Vite 配置文件
+- **package.json** - 项目依赖和脚本
 
 ## 📝 示例场景
 
@@ -325,16 +339,17 @@ const cellSize = 40;
 
 | 功能 | 简化版 | 完整版 |
 |------|--------|--------|
-| 单文件 | HTML + JSON | ❌ (Next.js 项目) |
+| 单文件 | HTML + JS + JSON | ❌ (Next.js 项目) |
 | 色板数量 | 288色 | 291色 |
 | 色板配置 | ✅ 外部JSON | ✅ 内置JSON |
 | 颜色匹配算法 | ✅ CIEDE2000 | ✅ CIEDE2000 |
+| 开发工具 | Vite | Next.js |
 | 手动编辑 | ❌ | ✅ |
 | 颜色排除 | ❌ | ✅ |
 | 背景移除 | ❌ | ✅ |
 | 区域合并 | ❌ | ✅ |
 | 专注模式 | ❌ | ✅ |
-| 依赖安装 | 无需 (CDN) | 需要 npm |
+| 依赖管理 | pnpm | npm/pnpm |
 
 ## 📄 许可证
 
